@@ -1,0 +1,191 @@
+---
+title: "Peer Assessments - Project 1"
+output: html_document
+---
+
+This is the Peer Assessment from project 1 of course Reprodutive Research.
+
+The data for this assignment is "Activity monitoring data". The variables included in this dataset are:
+
+**steps**: Number of steps taking in a 5-minute interval (missing values are coded as NA)
+
+**date**: The date on which the measurement was taken in YYYY-MM-DD format
+
+**interval**: Identifier for the 5-minute interval in which measurement was taken
+
+The dataset is stored in a comma-separated-value (CSV) file and there are a total of 17,568 observations in this dataset.
+
+The following activities are archeive:
+
+##A)Loading and preprocessing the data
+
+
+```{r, echo=TRUE}
+setwd("~/projeto MINERACAO DE DADOS/Aula Coursera Data Mining/5 - Reproducible Researsh/Peer Assessments/Peer Assessments 1")
+x<-read.csv("activity.csv", header = TRUE, sep = ",", quote = "\"",
+            dec = ".", fill = TRUE, comment.char = "",stringsAsFactors = FALSE)
+```
+
+##B)What is mean total number of steps taken per day?
+
+###Make a histogram of the total number of steps taken each day
+
+```{r, echo=TRUE}
+
+library(dplyr)
+grupo_data<-group_by(x,date)
+tot_day<-summarize(grupo_data,total=sum(steps,na.rm=TRUE))
+qtd<-tot_day$total
+hist(qtd, col="red", main="Total number of steps", xlab="Steps")
+
+dev.copy(png,'histogram1.png', width=480, height=480, units="px")
+dev.off()
+```
+
+
+###Calculate and report the mean and median total number of steps taken per day
+
+```{r, echo=TRUE}
+
+mean<-mean(tot_day$total,na.rm=TRUE)
+median<-median(tot_day$total,na.rm=TRUE)
+
+```
+
+Mean: `r mean` 
+
+Median: `r median` 
+
+
+##C)What is the average daily activity pattern?
+
+###Time series plot of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days
+
+
+```{r, echo=TRUE}
+
+grupo_data<-group_by(x,interval)
+tot_interv<-summarize(grupo_data,mean=mean(steps,na.rm=TRUE))
+
+plot(tot_interv$interval,tot_interv$mean,type="l", col="blue",main="Mean of steps", ylab="Steps",xlab="inteval")
+
+dev.copy(png,'time_series_plot.png', width=480, height=480, units="px")
+dev.off()
+
+```
+
+###Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+
+```{r, echo=TRUE}
+max_steps<-max(tot_interv$mean)
+five_minutes<-tot_interv[tot_interv$mean==max_steps,1]
+
+```
+
+The maximun number of steps is `r max_steps` and occurs in the `r five_minutes` interval.
+
+
+
+##D) Imputing missing values
+
+###Calculate and report the total number of missing values in the dataset (i.e. the total number of rows with NAs)
+
+```{r, echo=TRUE}
+missing<-x[is.na(x$steps),]
+n_missing<-nrow(missing)
+
+```
+
+The total number of missing values is `r n_missing`.
+
+
+###Create a new dataset that is equal to the original dataset but with the missing data filled in.
+
+
+```{r, echo=TRUE}
+complete_data<-merge(x,tot_interv)
+complete_data$step2<-ifelse(is.na(complete_data$step),complete_data$mean,complete_data$step)
+new_data_set<-complete_data[,c("interval","date","step2")]
+names(new_data_set)[3]<-"steps"
+new_data_set$datePOSIX<-strptime(new_data_set$date,"%Y-%m-%d")
+
+```
+
+###Make a histogram of the total number of steps taken each day 
+
+
+```{r, echo=TRUE}
+
+grupo_data2<-group_by(new_data_set[,c("date","steps")],date)
+tot_day2<-summarize(grupo_data2,total=sum(steps,na.rm=TRUE))
+qtd2<-tot_day2$total
+
+par(mfrow=c(1,2))
+hist(qtd2, col="red", main="Total number of steps without NA", xlab="Steps")
+hist(qtd, col="red", main="Total number of steps with NA", xlab="Steps")
+
+dev.copy(png,'histogram2', width=480, height=480, units="px")
+dev.off()
+
+```
+
+
+
+###Calculate and report the mean and median total number of steps taken per day
+
+```{r, echo=TRUE}
+
+mean2<-mean(tot_day2$total,na.rm=TRUE)
+median2<-median(tot_day2$total,na.rm=TRUE)
+
+```
+
+
+Mean with NA: `r mean` 
+
+Median with NA: `r median` 
+
+
+Mean without NA: `r mean2` 
+
+Median without NA: `r median2` 
+
+
+Impact on Mean: `r mean2-mean`
+
+Impact on Median: `r median2-median` 
+
+##Are there differences in activity patterns between weekdays and weekends?
+
+###Create a new factor variable in the dataset with two levels -- "weekday" and "weekend" indicating whether a given date is a weekday or weekend day.
+
+```{r, echo=TRUE}
+
+new_data_set$week<-factor(new_data_set$datePOSIX$wday %in% c(0,6),labels=c("weekday","weekend"))
+
+```
+
+###Make a panel plot containing a time series plot of the 5-minute interval and the average number of steps taken, averaged across all weekday days or weekend days (y-axis). The plot should look something like the following, which was created using simulated data:
+
+
+```{r, echo=TRUE}
+#Select Weekday
+WeekdayData<-new_data_set[new_data_set$week=="weekday",]
+WeekendData<-new_data_set[new_data_set$week=="weekend",]
+
+grupo<-group_by(WeekdayData[,c("interval","steps")],interval)
+WeekdaySteps<-summarize(grupo,mean=mean(steps,na.rm=TRUE))
+
+grupo<-group_by(WeekendData[,c("interval","steps")],interval)
+WeekendSteps<-summarize(grupo,mean=mean(steps,na.rm=TRUE))
+
+par(mfrow=c(2,1))
+
+plot(WeekdaySteps$interval,WeekdaySteps$mean,type="l", col="blue",main="Mean of steps in Weekdays", ylab="Steps",xlab="inteval")
+
+plot(WeekendSteps$interval,WeekendSteps$mean,type="l", col="blue",main="Mean of steps in Weekends", ylab="Steps",xlab="inteval")
+
+
+dev.copy(png,'panel_plot.png', width=480, height=480, units="px")
+dev.off()
+```
