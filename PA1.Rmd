@@ -124,7 +124,7 @@ par(mfrow=c(1,2))
 hist(qtd2, col="red", main="Total number of steps without NA", xlab="Steps")
 hist(qtd, col="red", main="Total number of steps with NA", xlab="Steps")
 
-dev.copy(png,'histogram2', width=480, height=480, units="px")
+dev.copy(png,'histogram2.png', width=480, height=480, units="px")
 dev.off()
 
 ```
